@@ -512,6 +512,9 @@ type loggingT struct {
 
 	// If true, do not add the headers to log files
 	skipLogHeaders bool
+
+    // If non-nil, this is used instead of the traditional glog/klog header formatting
+    formatter Formatter
 }
 
 // buffer holds a byte Buffer for reuse. The zero value is ready for use.
@@ -617,7 +620,7 @@ func (l *loggingT) header(s severity, depth int) (*buffer, string, int) {
 
 // formatHeader formats a log header using the provided file name and line number.
 func (l *loggingT) formatHeader(s severity, file string, line int) *buffer {
-	now := timeNow()
+
 	if line < 0 {
 		line = 0 // not a real line number, but acceptable to someDigits
 	}
@@ -629,13 +632,19 @@ func (l *loggingT) formatHeader(s severity, file string, line int) *buffer {
 		return buf
 	}
 
+    if l.formatter != nil {
+        l.formatter.FormatHeader(severityName[s], file, line, &buf.Buffer)
+        return buf
+    }
+
 	// Avoid Fprintf, for speed. The format is so simple that we can do it quickly by hand.
 	// It's worth about 3X. Fprintf is hard.
+	now := timeNow()
 	_, month, day := now.Date()
 	hour, minute, second := now.Clock()
 	// Lmmdd hh:mm:ss.uuuuuu threadid file:line]
 	buf.tmp[0] = severityChar[s]
-	buf.twoDigits(1, int(month))
+  	buf.twoDigits(1, int(month))
 	buf.twoDigits(3, day)
 	buf.tmp[5] = ' '
 	buf.twoDigits(6, hour)
@@ -649,7 +658,7 @@ func (l *loggingT) formatHeader(s severity, file string, line int) *buffer {
 	buf.nDigits(7, 22, pid, ' ') // TODO: should be TID
 	buf.tmp[29] = ' '
 	buf.Write(buf.tmp[:30])
-	buf.WriteString(file)
+    buf.WriteString(file)
 	buf.tmp[0] = ':'
 	n := buf.someDigits(1, line)
 	buf.tmp[n+1] = ']'
