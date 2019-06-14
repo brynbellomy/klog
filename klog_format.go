@@ -37,6 +37,84 @@ func SetFormatter(inFormatter Formatter) {
 	logging.formatter = inFormatter
 }
 
+// FmtConstWidth is a basic formatter that makes reasonable attempts to make the header length a constant width,
+// improving readability. It also can insert console color codes so each severity level is a different color.
+type FmtConstWidth struct {
+	// FileNameCharWidth is the number of chars to use from the given file name.
+	// Filenames shorter than this are padded with spaces.
+	// If 0, file names are not printed.
+	FileNameCharWidth int
+
+	// If set, color codes will be inserted
+	UseColor bool
+}
+
+// FormatHeader -- see interface Formatter
+func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine int, buf *bytes.Buffer) {
+	var (
+		tmp [64]byte
+	)
+
+	sevChar := inSeverity[0]
+	sz := 0
+
+	usingColor := f.UseColor
+	if usingColor {
+		var color byte
+		switch sevChar {
+		case 'W':
+			color = yellow
+		case 'E', 'F':
+			color = red
+		case 'I':
+			color = blue
+		default:
+			color = gray
+		}
+		sz += AppendColorCode(color, tmp[sz:])
+	}
+
+	tmp[sz] = sevChar
+	sz++
+
+	sz += AppendTimestamp(tmp[sz:])
+	tmp[sz] = ' '
+	sz++
+	buf.Write(tmp[:sz])
+	sz = 0
+
+	if segSz := f.FileNameCharWidth; segSz > 0 {
+		strLen := len(inFile)
+		padLen := segSz - strLen
+		if padLen < 0 {
+			buf.Write([]byte(inFile))
+		} else {
+			for ; sz < padLen; sz++ {
+				tmp[sz] = ' '
+			}
+			for ; sz < segSz; sz++ {
+				tmp[sz] = inFile[sz-padLen]
+			}
+		}
+		tmp[sz] = ':'
+		sz++
+		if inLine < 10000 {
+			sz += AppendNDigits(4, inLine, tmp[sz:], '0')
+		} else {
+			sz += AppendDigits(inLine, tmp[sz:])
+		}
+	}
+	tmp[sz] = ']'
+	tmp[sz+1] = ' '
+	sz += 2
+
+	if usingColor {
+		sz += AppendColorCode(byte(noColor), tmp[sz:])
+	}
+
+	buf.Write(tmp[:sz])
+}
+
 // AppendTimestamp appends a glog/klog-style timestamp to the given slice,
 // returning how many bytes were written.
 //
@@ -145,81 +223,3 @@ const (
 	cyan    = 36
 	gray    = 37
 )
-
-// FmtConstWidth is a basic formatter that makes reasonable attempts to make the header length a constant width,
-// improving readability. It also can insert console color codes so each severity level is a different color.
-type FmtConstWidth struct {
-	// FileNameCharWidth is the number of chars to use from the given file name.
-	// Filenames shorter than this are padded with spaces.
-	// If 0, file names are not printed.
-	FileNameCharWidth int
-
-	// If set, color codes will be inserted
-	UseColor bool
-}
-
-// FormatHeader -- see interface Formatter
-func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine int, buf *bytes.Buffer) {
-	var (
-		tmp [64]byte
-	)
-
-	sevChar := inSeverity[0]
-	sz := 0
-
-	usingColor := f.UseColor
-	if usingColor {
-		var color byte
-		switch sevChar {
-		case 'W':
-			color = yellow
-		case 'E', 'F':
-			color = red
-		case 'I':
-			color = blue
-		default:
-			color = gray
-		}
-		sz += AppendColorCode(color, tmp[sz:])
-	}
-
-	tmp[sz] = sevChar
-	sz++
-
-	sz += AppendTimestamp(tmp[sz:])
-	tmp[sz] = ' '
-	sz++
-	buf.Write(tmp[:sz])
-	sz = 0
-
-	if segSz := f.FileNameCharWidth; segSz > 0 {
-		strLen := len(inFile)
-		padLen := segSz - strLen
-		if padLen < 0 {
-			buf.Write([]byte(inFile))
-		} else {
-			for ; sz < padLen; sz++ {
-				tmp[sz] = ' '
-			}
-			for ; sz < segSz; sz++ {
-				tmp[sz] = inFile[sz-padLen]
-			}
-		}
-		tmp[sz] = ':'
-		sz++
-		if inLine < 10000 {
-			sz += AppendNDigits(4, inLine, tmp[sz:], '0')
-		} else {
-			sz += AppendDigits(inLine, tmp[sz:])
-		}
-	}
-	tmp[sz] = ']'
-	tmp[sz+1] = ' '
-	sz += 2
-
-	if usingColor {
-		sz += AppendColorCode(byte(noColor), tmp[sz:])
-	}
-
-	buf.Write(tmp[:sz])
-}
