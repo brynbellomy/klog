@@ -65,11 +65,9 @@ func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine in
 		case 'W':
 			color = yellow
 		case 'E', 'F':
-			color = red
-		case 'I':
-			color = blue
+			color = lightRed
 		default:
-			color = gray
+			color = dim
 		}
 		sz += AppendColorCode(color, tmp[sz:])
 	}
@@ -214,12 +212,24 @@ func AppendColorCode(inColorCode byte, buf []byte) int {
 }
 
 const (
-	noColor = 0
-	red     = 31
-	green   = 32
-	yellow  = 33
-	blue    = 34
-	magenta = 35
-	cyan    = 36
-	gray    = 37
+	noColor      = 0
+	bold         = 1
+	dim          = 2
+	underline    = 3
+	invert       = 7
+	black        = 30
+	red          = 31
+	green        = 32
+	yellow       = 33
+	blue         = 34
+	magenta      = 35
+	cyan         = 36
+	lightGray    = 37
+	darkGrey     = 90
+	lightRed     = 91
+	lightGreen   = 92
+	lightYellow  = 93
+	lightBlue    = 94
+	lightMagenta = 95
+	lightCyan    = 96
 )
