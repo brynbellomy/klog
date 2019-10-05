@@ -102,9 +102,8 @@ func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine in
 			sz += AppendDigits(inLine, tmp[sz:])
 		}
 	}
-	tmp[sz] = '$'
-	tmp[sz+1] = ' '
-	sz += 2
+	tmp[sz] = ' '
+	sz += 1
 
 	if usingColor {
 		sz += AppendColorCode(byte(noColor), tmp[sz:])
