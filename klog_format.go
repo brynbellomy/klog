@@ -66,6 +66,10 @@ func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine in
 			color = yellow
 		case 'E', 'F':
 			color = lightRed
+		case 'S':
+			color = green
+		case 'D':
+			color = magenta
 		default:
 			color = dim
 		}
@@ -102,8 +106,9 @@ func (f *FmtConstWidth) FormatHeader(inSeverity string, inFile string, inLine in
 			sz += AppendDigits(inLine, tmp[sz:])
 		}
 	}
-	tmp[sz] = ' '
-	sz += 1
+	tmp[sz] = ']'
+	tmp[sz+1] = ' '
+	sz += 2
 
 	if usingColor {
 		sz += AppendColorCode(byte(noColor), tmp[sz:])
